@@ -5,7 +5,16 @@ import { useOrderList } from '../../contexts/OrderContext';
 import axios from 'axios';
 
 export default function Cashier() {
-  const { orderList, increaseQuantity, decreaseQuantity, removeFromOrder } = useOrderList();
+  const { orderList, increaseQuantity, decreaseQuantity, removeFromOrder, removeAllOrders } =
+    useOrderList();
+
+  // Tính tổng số tiền của đơn hàng
+  const calculateTotal = () => {
+    return orderList.reduce((total, item) => {
+      const price = parseFloat(item.product.price); // Chuyển đổi giá từ string sang number
+      return total + price * item.quantity;
+    }, 0);
+  };
 
   const handleConfirmOrder = async () => {
     if (orderList.length === 0) {
@@ -14,6 +23,8 @@ export default function Cashier() {
     }
 
     try {
+      const total = calculateTotal().toFixed(2); // Tính tổng số tiền và làm tròn 2 chữ số thập phân
+
       // Gửi yêu cầu POST để tạo đơn hàng mới
       const response = await axios.post(
         'https://67a28947409de5ed5255aeed.mockapi.io/api/v1/Order',
@@ -24,6 +35,7 @@ export default function Cashier() {
             price: item.product.price,
             quantity: item.quantity,
           })),
+          Total: total, // Thêm tổng số tiền vào dữ liệu gửi lên API
         }
       );
 
@@ -38,11 +50,6 @@ export default function Cashier() {
       console.error('Error confirming order:', error);
       Alert.alert('Error', 'An error occurred while saving the order.');
     }
-  };
-
-  const removeAllOrders = () => {
-    // Xóa tất cả sản phẩm khỏi orderList
-    orderList.forEach((item) => removeFromOrder(item.product.id));
   };
 
   return (
@@ -79,6 +86,11 @@ export default function Cashier() {
           </View>
         )}
       />
+      {/* Hiển thị tổng số tiền */}
+      <View style={styles.totalContainer}>
+        <Text style={styles.totalText}>Total: ${calculateTotal().toFixed(2)}</Text>
+      </View>
+      {/* Nút xác nhận đơn hàng */}
       <TouchableOpacity style={styles.confirmButton} onPress={handleConfirmOrder}>
         <Text style={styles.confirmButtonText}>Confirm Order</Text>
       </TouchableOpacity>
@@ -135,6 +147,17 @@ const styles = StyleSheet.create({
   },
   removeButtonText: {
     color: '#fff',
+    fontWeight: 'bold',
+  },
+  totalContainer: {
+    marginTop: 16,
+    padding: 16,
+    backgroundColor: '#f5f5f5',
+    borderRadius: 8,
+    alignItems: 'center',
+  },
+  totalText: {
+    fontSize: 18,
     fontWeight: 'bold',
   },
   confirmButton: {
