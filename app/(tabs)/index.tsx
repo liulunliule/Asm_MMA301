@@ -1,9 +1,9 @@
-// app/(tabs)/index.tsx
 import React, { useEffect, useState } from 'react';
 import { View, FlatList, StyleSheet, ActivityIndicator } from 'react-native';
 import MenuItem from '../../components/MenuItem';
 import { fetchProducts } from '../../services/api';
 import { useOrderList } from '../../contexts/OrderContext';
+import Toast from 'react-native-toast-message';
 
 interface Product {
   id: string;
@@ -45,10 +45,19 @@ export default function Home() {
             productName={item.productName}
             price={item.price}
             productImage={item.productImage}
-            onPress={() => addToOrder(item)}
+            onPress={() => {
+              addToOrder(item);
+              Toast.show({
+                type: 'success',
+                text1: 'Added to order',
+                text2: `${item.productName} added successfully!`,
+                position: 'top',
+              });
+            }}
           />
         )}
       />
+      <Toast />
     </View>
   );
 }

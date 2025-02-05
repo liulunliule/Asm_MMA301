@@ -11,7 +11,7 @@ export default function Layout() {
           name="index"
           options={{
             title: 'Home',
-            headerShown: false, // Ẩn header nếu không cần thiết
+            headerShown: false,
           }}
         />
 
@@ -19,14 +19,14 @@ export default function Layout() {
         <Stack.Screen
           name="(tabs)"
           options={{
-            headerShown: false, // Ẩn header cho các tab
+            headerShown: false,
           }}
         />
 
         <Stack.Screen
           name="[product]"
           options={{
-            title: 'Product Details', 
+            title: 'Product Details',
           }}
         />
       </Stack>
