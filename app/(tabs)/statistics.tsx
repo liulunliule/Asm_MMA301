@@ -30,14 +30,24 @@ export default function Statistics() {
   const todayOrders = orders.filter(order => new Date(order.createdAt).toDateString() === today.toDateString());
   const todayRevenue = Math.round(todayOrders.reduce((acc, order) => acc + parseFloat(order.Total), 0));
 
-  const weeklyData = orders.map(order => ({
-    date: new Date(order.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' }).replace('-', '/'),
-    total: Math.round(parseFloat(order.Total))
-  }));
+  // Lấy dữ liệu 7 ngày gần nhất
+  const getLast7Days = () => {
+    const days = [];
+    for (let i = 6; i >= 0; i--) {
+      const date = new Date();
+      date.setDate(date.getDate() - i);
+      days.push(date.toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' }).replace('-', '/'));
+    }
+    return days;
+  };
 
-  const uniqueWeeklyLabels = [...new Set(weeklyData.map(item => item.date))];
-  const weeklyRevenueData = uniqueWeeklyLabels.map(date => {
-    return weeklyData.filter(item => item.date === date).reduce((sum, item) => sum + item.total, 0);
+  const last7DaysLabels = getLast7Days(); // Nhãn cho 7 ngày gần nhất
+  const last7DaysData = last7DaysLabels.map(date => {
+    const ordersForDate = orders.filter(order => {
+      const orderDate = new Date(order.createdAt).toLocaleDateString(undefined, { day: '2-digit', month: '2-digit' }).replace('-', '/');
+      return orderDate === date;
+    });
+    return ordersForDate.reduce((sum, order) => sum + Math.round(parseFloat(order.Total)), 0);
   });
 
   const now = new Date();
@@ -55,7 +65,7 @@ export default function Statistics() {
       <View style={styles.statsContainer}>
         <View style={styles.statBox}>
           <Text style={styles.statTitle}>Total Revenue</Text>
-          <Text style={styles.statValue}>${weeklyRevenueData.reduce((a, b) => a + b, 0)}</Text>
+          <Text style={styles.statValue}>${last7DaysData.reduce((a, b) => a + b, 0)}</Text>
         </View>
         <View style={styles.statBox}>
           <Text style={styles.statTitle}>Orders Today</Text>
@@ -68,11 +78,11 @@ export default function Statistics() {
       </View>
 
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Weekly Revenue</Text>
+        <Text style={styles.chartTitle}>Last 7 Days Revenue</Text>
         <BarChart
           data={{
-            labels: uniqueWeeklyLabels,
-            datasets: [{ data: weeklyRevenueData }],
+            labels: last7DaysLabels,
+            datasets: [{ data: last7DaysData }],
           }}
           width={screenWidth - 32}
           height={250}
