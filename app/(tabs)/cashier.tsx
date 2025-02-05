@@ -10,6 +10,8 @@ import {
 } from "react-native";
 import { useOrderList } from "../../contexts/OrderContext";
 import { createOrder } from "../../services/api";
+import * as Print from 'expo-print'; // Thay thế react-native-html-to-pdf bằng expo-print
+import * as Sharing from 'expo-sharing'; // Để chia sẻ file PDF
 
 export default function Cashier() {
   const {
@@ -59,6 +61,122 @@ export default function Cashier() {
     } catch (error) {
       console.error("Error confirming order:", error);
       Alert.alert("Error", "An error occurred while saving the order.");
+    }
+  };
+
+  const handlePrintBill = async () => {
+    if (!orderDetails) return;
+
+    // Tạo nội dung HTML cho hóa đơn
+    const htmlContent = `
+      <html>
+        <head>
+          <style>
+            body { 
+              font-family: Arial, sans-serif; 
+              margin: 0;
+              padding: 20px;
+            }
+            .modalView {
+              width: 100%;
+              max-width: 600px;
+              margin: 0 auto;
+              background-color: white;
+              border-radius: 10px;
+              padding: 20px;
+              box-shadow: 0 4px 8px rgba(0, 0, 0, 0.1);
+            }
+            .modalTitle {
+              font-size: 20px;
+              font-weight: bold;
+              text-align: center;
+              margin-bottom: 15px;
+            }
+            .modalText {
+              font-size: 16px;
+              margin-bottom: 10px;
+            }
+            .tableHeader {
+              display: flex;
+              justify-content: space-between;
+              border-bottom: 1px solid #ccc;
+              padding: 8px 0;
+              margin-bottom: 8px;
+            }
+            .tableHeaderText {
+              font-size: 16px;
+              font-weight: bold;
+              flex: 1;
+              text-align: left;
+            }
+            .tableRow {
+              display: flex;
+              justify-content: space-between;
+              align-items: center;
+              padding: 8px 0;
+              border-bottom: 1px solid #eee;
+            }
+            .totalAmountContainer {
+              margin-top: 16px;
+              padding-top: 16px;
+              border-top: 1px solid #ccc;
+              text-align: right;
+            }
+            .totalAmountText {
+              font-size: 18px;
+              font-weight: bold;
+            }
+          </style>
+        </head>
+        <body>
+          <div class="modalView">
+            <div class="modalTitle">Order Details</div>
+            <div class="modalText">Order ID: ${orderDetails.id}</div>
+            <div class="modalText">Date: ${new Date(orderDetails.createdAt).toLocaleString()}</div>
+  
+            <!-- Table Header -->
+            <div class="tableHeader">
+              <div class="tableHeaderText" style="flex: 2;">Product Name & Price</div>
+              <div class="tableHeaderText" style="flex: 1;">Quantity</div>
+              <div class="tableHeaderText" style="flex: 1;">Total</div>
+            </div>
+  
+            <!-- Table Rows -->
+            ${orderDetails.Products.map(
+      (product) => `
+              <div class="tableRow">
+                <div style="flex: 2;">
+                  <div class="modalText">${product.productName}</div>
+                  <div class="modalText">$${product.price}</div>
+                </div>
+                <div class="modalText" style="flex: 1; text-align: center;">${product.quantity}</div>
+                <div class="modalText" style="flex: 1; text-align: right;">
+                  $${(product.price * product.quantity).toFixed(2)}
+                </div>
+              </div>
+            `
+    ).join('')}
+  
+            <!-- Total Amount -->
+            <div class="totalAmountContainer">
+              <div class="totalAmountText">Total: $${orderDetails.Total}</div>
+            </div>
+          </div>
+        </body>
+      </html>
+    `;
+
+    try {
+      // Tạo file PDF từ HTML
+      const { uri } = await Print.printToFileAsync({ html: htmlContent });
+
+      // Chia sẻ file PDF
+      await Sharing.shareAsync(uri, { mimeType: 'application/pdf', dialogTitle: 'Print Bill' });
+
+      Alert.alert('Success', 'PDF has been generated and shared.');
+    } catch (error) {
+      console.error('Error generating PDF:', error);
+      Alert.alert('Error', 'Failed to generate PDF.');
     }
   };
 
@@ -129,23 +247,46 @@ export default function Cashier() {
                 <Text style={styles.modalText}>
                   Date: {new Date(orderDetails.createdAt).toLocaleString()}
                 </Text>
-                <Text style={styles.modalText}>Products:</Text>
+
+                {/* Table Header */}
+                <View style={styles.tableHeader}>
+                  <Text style={[styles.tableHeaderText, { flex: 2 }]}>Product Name & Price</Text>
+                  <Text style={[styles.tableHeaderText, { flex: 1 }]}>Quantity</Text>
+                  <Text style={[styles.tableHeaderText, { flex: 1 }]}>Total</Text>
+                </View>
+
+                {/* Table Rows */}
                 {orderDetails.Products.map((product, index) => (
-                  <View key={index} style={styles.productItem}>
-                    <Text style={styles.modalText}>{product.productName}</Text>
-                    <Text style={styles.modalText}>
-                      Quantity: {product.quantity}
-                    </Text>
-                    <Text style={styles.modalText}>
-                      Price: ${product.price}
+                  <View key={index} style={styles.tableRow}>
+                    <View style={{ flex: 2 }}>
+                      <Text style={styles.modalText}>{product.productName}</Text>
+                      <Text style={styles.modalText}>${product.price}</Text>
+                    </View>
+                    <Text style={[styles.modalText, { flex: 1, textAlign: 'center' }]}>{product.quantity}</Text>
+                    <Text style={[styles.modalText, { flex: 1, textAlign: 'right' }]}>
+                      ${(product.price * product.quantity).toFixed(2)}
                     </Text>
                   </View>
                 ))}
-                <Text style={styles.modalText}>
-                  Total: ${orderDetails.Total}
-                </Text>
+
+                {/* Total Amount */}
+                <View style={styles.totalAmountContainer}>
+                  <Text style={styles.totalAmountText}>
+                    Total: ${orderDetails.Total}
+                  </Text>
+                </View>
               </>
             )}
+
+            {/* Print Bill Button */}
+            <TouchableOpacity
+              style={styles.printButton}
+              onPress={handlePrintBill}
+            >
+              <Text style={styles.printButtonText}>Print Bill</Text>
+            </TouchableOpacity>
+
+            {/* Close Button */}
             <TouchableOpacity
               style={styles.closeButton}
               onPress={() => setModalVisible(!modalVisible)}
@@ -279,6 +420,50 @@ const styles = StyleSheet.create({
     width: "100%",
   },
   closeButtonText: {
+    color: "#fff",
+    fontSize: 16,
+    fontWeight: "bold",
+  },
+  tableHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    borderBottomWidth: 1,
+    borderBottomColor: '#ccc',
+    paddingVertical: 8,
+    marginBottom: 8,
+  },
+  tableHeaderText: {
+    fontSize: 16,
+    fontWeight: 'bold',
+  },
+  tableRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    paddingVertical: 8,
+    borderBottomWidth: 1,
+    borderBottomColor: '#eee',
+  },
+  totalAmountContainer: {
+    marginTop: 16,
+    paddingTop: 16,
+    borderTopWidth: 1,
+    borderTopColor: '#ccc',
+    alignItems: 'flex-end',
+  },
+  totalAmountText: {
+    fontSize: 18,
+    fontWeight: 'bold',
+  },
+  printButton: {
+    marginTop: 15,
+    padding: 10,
+    backgroundColor: "#2196F3",
+    borderRadius: 5,
+    alignItems: "center",
+    width: "100%",
+  },
+  printButtonText: {
     color: "#fff",
     fontSize: 16,
     fontWeight: "bold",
