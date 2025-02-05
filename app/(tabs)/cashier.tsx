@@ -2,7 +2,7 @@
 import React from 'react';
 import { View, FlatList, StyleSheet, Text, TouchableOpacity, Alert } from 'react-native';
 import { useOrderList } from '../../contexts/OrderContext';
-import axios from 'axios';
+import { createOrder } from '../../services/api';
 
 export default function Cashier() {
   const { orderList, increaseQuantity, decreaseQuantity, removeFromOrder, removeAllOrders } =
@@ -25,27 +25,23 @@ export default function Cashier() {
     try {
       const total = calculateTotal().toFixed(2); // Tính tổng số tiền và làm tròn 2 chữ số thập phân
 
-      // Gửi yêu cầu POST để tạo đơn hàng mới
-      const response = await axios.post(
-        'https://67a28947409de5ed5255aeed.mockapi.io/api/v1/Order',
-        {
-          Products: orderList.map((item) => ({
-            productId: item.product.id,
-            productName: item.product.productName,
-            price: item.product.price,
-            quantity: item.quantity,
-          })),
-          Total: total, // Thêm tổng số tiền vào dữ liệu gửi lên API
-        }
-      );
+      // Tạo dữ liệu đơn hàng
+      const orderData = {
+        Products: orderList.map((item) => ({
+          productId: item.product.id,
+          productName: item.product.productName,
+          price: item.product.price,
+          quantity: item.quantity,
+        })),
+        Total: total, // Thêm tổng số tiền vào dữ liệu gửi lên API
+      };
 
-      if (response.status === 201) {
-        Alert.alert('Success', 'Order confirmed and saved successfully!');
-        // Xóa danh sách đơn hàng sau khi xác nhận thành công
-        removeAllOrders();
-      } else {
-        Alert.alert('Error', 'Failed to save the order.');
-      }
+      // Gọi API để tạo đơn hàng
+      await createOrder(orderData);
+
+      Alert.alert('Success', 'Order confirmed and saved successfully!');
+      // Xóa danh sách đơn hàng sau khi xác nhận thành công
+      removeAllOrders();
     } catch (error) {
       console.error('Error confirming order:', error);
       Alert.alert('Error', 'An error occurred while saving the order.');
