@@ -78,7 +78,7 @@ export default function Statistics() {
       </View>
 
       <View style={styles.chartContainer}>
-        <Text style={styles.chartTitle}>Last 7 Days Revenue</Text>
+        <Text style={styles.chartTitle}>Week's Revenue</Text>
         <BarChart
           data={{
             labels: last7DaysLabels,

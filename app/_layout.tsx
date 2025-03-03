@@ -15,7 +15,6 @@ export default function Layout() {
           }}
         />
 
-        {/* Các tab (Home và Cashier) */}
         <Stack.Screen
           name="(tabs)"
           options={{
