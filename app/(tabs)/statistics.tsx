@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, ActivityIndicator, Dimensions, RefreshControl } from 'react-native';
 import { BarChart, LineChart } from 'react-native-chart-kit';
 import { fetchOrders } from '@/services/api';
 
@@ -8,16 +8,29 @@ const screenWidth = Dimensions.get("window").width;
 export default function Statistics() {
   const [orders, setOrders] = useState([]);
   const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false); // State để kiểm soát trạng thái refresh
 
+  // Hàm tải dữ liệu đơn hàng
+  const loadOrders = async () => {
+    setLoading(true);
+    const data = await fetchOrders();
+    setOrders(data);
+    setLoading(false);
+  };
+
+  // Gọi hàm loadOrders khi component được mount
   useEffect(() => {
-    const loadOrders = async () => {
-      const data = await fetchOrders();
-      setOrders(data);
-      setLoading(false);
-    };
     loadOrders();
   }, []);
 
+  // Hàm xử lý khi người dùng kéo để refresh
+  const onRefresh = async () => {
+    setRefreshing(true); // Bật trạng thái refreshing
+    await loadOrders(); // Tải lại dữ liệu
+    setRefreshing(false); // Tắt trạng thái refreshing
+  };
+
+  // Hiển thị loading indicator nếu đang tải dữ liệu
   if (loading) {
     return (
       <View style={styles.loadingContainer}>
@@ -26,6 +39,7 @@ export default function Statistics() {
     );
   }
 
+  // Tính toán dữ liệu cho các biểu đồ và thống kê
   const today = new Date();
   const todayOrders = orders.filter(order => new Date(order.createdAt).toDateString() === today.toDateString());
   const todayRevenue = Math.round(todayOrders.reduce((acc, order) => acc + parseFloat(order.Total), 0));
@@ -59,7 +73,17 @@ export default function Statistics() {
   });
 
   return (
-    <ScrollView style={styles.container}>
+    <ScrollView
+      style={styles.container}
+      refreshControl={
+        <RefreshControl
+          refreshing={refreshing} // Trạng thái refreshing
+          onRefresh={onRefresh} // Hàm xử lý khi refresh
+          colors={['#27ae60']} // Màu của indicator (Android)
+          tintColor="#27ae60" // Màu của indicator (iOS)
+        />
+      }
+    >
       <Text style={styles.title}>📊 Sales Statistics</Text>
 
       <View style={styles.statsContainer}>
@@ -125,7 +149,6 @@ export default function Statistics() {
           bezier
         />
       </View>
-
     </ScrollView>
   );
 }
@@ -174,11 +197,11 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     marginBottom: 20,
     padding: 10,
-    borderWidth: 0, // Border thickness
-    borderRadius: 10, // Rounded corners
-    backgroundColor: '#ffffff', // White background to ensure it looks clean
-    elevation: 3, // Shadow effect (for Android)
-    shadowColor: '#000', // Shadow (for iOS)
+    borderWidth: 0,
+    borderRadius: 10,
+    backgroundColor: '#ffffff',
+    elevation: 3,
+    shadowColor: '#000',
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.1,
     shadowRadius: 4,

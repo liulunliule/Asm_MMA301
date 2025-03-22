@@ -1,6 +1,5 @@
-// app/(tabs)/order-history.tsx
 import React, { useEffect, useState } from 'react';
-import { View, FlatList, StyleSheet, Text, ActivityIndicator } from 'react-native';
+import { View, FlatList, StyleSheet, Text, ActivityIndicator, RefreshControl } from 'react-native';
 import { fetchOrders } from '@/services/api';
 
 interface Order {
@@ -18,17 +17,24 @@ interface Order {
 export default function OrderHistory() {
     const [orders, setOrders] = useState<Order[]>([]);
     const [loading, setLoading] = useState(true);
+    const [refreshing, setRefreshing] = useState(false);
 
-
+    const loadOrders = async () => {
+        setLoading(true);
+        const data = await fetchOrders();
+        setOrders(data);
+        setLoading(false);
+    };
 
     useEffect(() => {
-        const loadProducts = async () => {
-            const data = await fetchOrders();
-            setOrders(data);
-            setLoading(false);
-        };
-        loadProducts();
+        loadOrders();
     }, []);
+
+    const onRefresh = async () => {
+        setRefreshing(true);
+        await loadOrders();
+        setRefreshing(false);
+    };
 
     if (loading) {
         return (
@@ -49,7 +55,6 @@ export default function OrderHistory() {
                             {new Date(item.createdAt).toLocaleDateString()} {new Date(item.createdAt).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' })}
                         </Text>
 
-
                         {/* Danh sách sản phẩm */}
                         {item.Products.map((product) => (
                             <View key={product.productId} style={styles.productItem}>
@@ -63,6 +68,14 @@ export default function OrderHistory() {
                         <Text style={styles.totalText}>Total: ${item.Total}</Text>
                     </View>
                 )}
+                refreshControl={
+                    <RefreshControl
+                        refreshing={refreshing}
+                        onRefresh={onRefresh}
+                        colors={['#0000ff']} // Màu sắc của indicator
+                        tintColor="#0000ff" // Màu sắc của indicator (iOS)
+                    />
+                }
             />
         </View>
     );
