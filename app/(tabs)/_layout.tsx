@@ -52,6 +52,17 @@ export default function Layout() {
           ),
         }}
       />
+
+      {/* Tab Login */}
+      <Tabs.Screen
+        name="login"
+        options={{
+          title: 'Login',
+          tabBarIcon: ({ color }) => (
+            <MaterialIcons name="account-circle" size={24} color={color} />
+          ),
+        }}
+      />
     </Tabs>
   );
 }

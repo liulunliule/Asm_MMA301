@@ -1,4 +1,3 @@
-// app/_layout.tsx
 import { Stack } from 'expo-router';
 import { OrderProvider } from '../contexts/OrderContext';
 
@@ -15,6 +14,10 @@ export default function Layout() {
           }}
         />
 
+        <Stack.Screen
+          name="login"
+          options={{ headerShown: false }}
+        />
         <Stack.Screen
           name="(tabs)"
           options={{
